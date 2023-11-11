@@ -9,13 +9,11 @@ from extensions.download_github_release import GitHubDownloader
 from extensions.minecraft import MINECRAFT_PROXY_DIR
 
 SPIGET_PLUGINS = [
-    (19254, "viaversion.jar"),
-    ()
+    (19254, "viaversion.jar")
 ]
 
 GITHUB_PLUGINS = [
-    ("CakeDreamer/ProxiedProxy", "ProxiedProxy.jar"),
-    ("")
+    ("CakeDreamer/ProxiedProxy", "ProxiedProxy.jar")
 ]
 
 STORAGE_FILE = "autoupdate_plugins.txt"
@@ -26,6 +24,7 @@ class SpigetPluginAutoUpdater:
         self.plugins = plugins
 
     def onDaemonInit(self, event : DaemonStartEvent) -> None:
+        INFO("Checking for Spiget plugins updates...")
         for resource_id, jar_file in SPIGET_PLUGINS:
             self.download(resource_id, os.path.join(MINECRAFT_PROXY_DIR, "plugins", jar_file))
 
@@ -34,7 +33,10 @@ class SpigetPluginAutoUpdater:
         DOWNLOAD_URL = '{}/{}/download'.format(BASE_URL, resource_id)
         try:
             response = requests.get(DOWNLOAD_URL, stream=True)
-
+            
+            if not os.path.exists(os.path.dirname(save_path)):
+                os.makedirs(os.path.dirname(save_path))
+            
             # Check SHA1 of the local file if it exists
             if os.path.exists(save_path):
                 with open(save_path, 'rb') as file:
@@ -43,15 +45,17 @@ class SpigetPluginAutoUpdater:
                 local_sha1 = None
             
             # Check SHA1 of the remote file
+            # For external resources, there is no SHA1 or any other digest header available,
+            # so maybe we should find another approach to do this
             remote_sha1 = response.headers.get('X-Spiget-Resource-SHA1')
 
-            # Continue download if file doesn't exist locally or SHA1 mismatch
-            if local_sha1 != remote_sha1:
+            # Continue download if file doesn't exist locally or SHA1 mismatch or remote SHA1 is not available
+            if remote_sha1 == None or local_sha1 != remote_sha1:
                 if response.status_code == 200:
                     with open(save_path, 'wb') as file:
                         file.write(response.raw.read())
                         
-                    INFO('Download completed. File saved to: {}'.format(save_path))
+                    INFO(f'Download completed. File saved to: {save_path}')
                 else:
                     WARN(f'Unable to download the plugin. Status code: {response.status_code}')
             else:
@@ -67,6 +71,9 @@ class GithubPluginAutoUpdater:
         self.downloaded_ids_new = {}
 
     def onDaemonInit(self, event : DaemonStartEvent) -> None:
+        INFO("Checking for Github plugins updates...")
+        if not os.path.exists(os.path.join("extensions", STORAGE_FILE)):
+            open(os.path.join("extensions", STORAGE_FILE), 'w').close()
         with open(os.path.join("extensions", STORAGE_FILE), 'r') as f:
             try:
                 self.downloaded_ids = json.load(f)
@@ -75,7 +82,7 @@ class GithubPluginAutoUpdater:
         for item in GITHUB_PLUGINS:
             if len(item) == 2:
                 repo, output = item
-                keyword = "*.jar"
+                keyword = ".jar$"
             elif len(item) == 3:
                 repo, output, keyword = item
             else:
@@ -85,8 +92,12 @@ class GithubPluginAutoUpdater:
             json.dump(self.downloaded_ids_new, f)
 
     def download(self, repo : str, keyword : Union[str, re.Pattern, None], output : str) -> None:
-        resource = GitHubDownloader(repo).search(keyword)
+        resource = GitHubDownloader(repo).search(None, keyword)
         if resource.getId() != 0:
             if self.downloaded_ids.get(output, 0) != resource.getId():
-                resource.download(output)
+                resource.download(os.path.dirname(output), os.path.basename(output))
+                INFO(f"Download completed. File saved to: {output}")
             self.downloaded_ids_new[output] = resource.getId()
+
+SpigetPluginAutoUpdater(SPIGET_PLUGINS)
+GithubPluginAutoUpdater(GITHUB_PLUGINS)

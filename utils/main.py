@@ -78,7 +78,7 @@ class FrpcDaemon:
         DAEMON.eventMgr.fire(FrpcStartEvent(self))
 
     def sync(self) -> None:
-        response = self.unionAPI.queryAPI()
+        response = self.__union_api.queryAPI()
         event = FrpcSyncEvent(self, response)
         DAEMON.eventMgr.fire(event)
         self.__restartFrpcProcesses(event.api_query_result['frpc'])

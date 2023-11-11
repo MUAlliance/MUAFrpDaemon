@@ -1,5 +1,3 @@
-from utils.main import FrpcDaemon
-
 class Event:
     class Priority:
         HIGH = 0
@@ -10,20 +8,20 @@ class Event:
         pass
 
 class FrpcSyncEvent(Event):
-    def __init__(self, frpc_daemon : FrpcDaemon, api_query_result):
+    def __init__(self, frpc_daemon, api_query_result):
         self.frpc_daemon = frpc_daemon
         self.api_query_result = api_query_result
 
 class FrpcStartEvent(Event):
-    def __init__(self, frpc_daemon : FrpcDaemon):
+    def __init__(self, frpc_daemon):
         self.frpc_daemon = frpc_daemon
 
 class DaemonStartEvent(Event):
-    def __init__(self, frpc_daemon : FrpcDaemon):
+    def __init__(self, frpc_daemon):
         self.frpc_daemon = frpc_daemon
 
 class DaemonStopEvent(Event):
-    def __init__(self, frpc_daemon : FrpcDaemon):
+    def __init__(self, frpc_daemon):
         self.frpc_daemon = frpc_daemon
 
 class FrpcPauseEvent(Event):
@@ -35,7 +33,7 @@ class EventMgr:
         self._handler_list = [{}, {}, {}]
 
     def registerHandler(self, event: type, handler, priority = Event.Priority.MEDIUM):
-        if event in self._handler_list:
+        if event in self._handler_list[priority]:
             self._handler_list[priority][event].append(handler)
         else:
             self._handler_list[priority][event] = [handler]

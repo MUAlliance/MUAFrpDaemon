@@ -18,8 +18,11 @@ class FrpcAutoUpdater:
         DAEMON.eventMgr.registerHandler(DaemonStartEvent, self.onDaemonInit, Event.Priority.HIGH)
 
     def onDaemonInit(self, event : DaemonStartEvent) -> None:
+        INFO("Checking for Frpc updates...")
         try:
             version = event.frpc_daemon.union_api.queryPublicAPI()["union_entry"]["frp_version"]
+            if not os.path.exists(FRPC_DIR):
+                os.makedirs(FRPC_DIR)
             vfile_path = os.path.join(FRPC_DIR, VERSION_FILE)
             if not os.path.exists(vfile_path):
                 open(vfile_path, 'w').close()
@@ -38,7 +41,7 @@ class FrpcAutoUpdater:
             else:
                 WARN("Unsupported operating system.")
                 return
-            machine_name = platform.machine()
+            machine_name = platform.machine().lower()
             if machine_name == "amd64":
                 arch = "amd64"
             elif machine_name == "x86_64":
@@ -50,7 +53,7 @@ class FrpcAutoUpdater:
             else:
                 WARN("Unsupported architecture.")
                 return
-            self.downloadFrpc(version, os_name, arch, config.FRPC_DIR + "frpc_download")
+            self.downloadFrpc(version, os_name, arch, os.path.join(config.FRPC_DIR,"frpc_download"))
         except Exception as e:
             WARN("Error occured:")
             traceback.print_exc(e)
@@ -63,14 +66,18 @@ class FrpcAutoUpdater:
             with tarfile.open(fpath, 'r:gz') as tf:
                 subfolder = [m for m in tf.getmembers() if m.isdir()][0].name
                 tf.extractall(config.FRPC_DIR)
-                shutil.move(os.path.join(config.FRPC_DIR, subfolder), config.FRPC_DIR)
+                for f in os.listdir(os.path.join(config.FRPC_DIR, subfolder)):
+                    shutil.move(os.path.join(config.FRPC_DIR, subfolder, f), config.FRPC_DIR)
+                os.rmdir(os.path.join(config.FRPC_DIR, subfolder))
             with open(os.path.join(FRPC_DIR, VERSION_FILE), 'w') as f:
                 f.write(version)
         elif fpath.endswith('.zip'):
             with zipfile.ZipFile(fpath, 'r') as zf:
                 subfolder = [n for n in zf.namelist() if n.endswith('/')][0]
                 zf.extractall(config.FRPC_DIR)
-                shutil.move(os.path.join(config.FRPC_DIR, subfolder), config.FRPC_DIR)
+                for f in os.listdir(os.path.join(config.FRPC_DIR, subfolder)):
+                    shutil.move(os.path.join(config.FRPC_DIR, subfolder, f), config.FRPC_DIR)
+                os.rmdir(os.path.join(config.FRPC_DIR, subfolder))
             with open(os.path.join(FRPC_DIR, VERSION_FILE), 'w') as f:
                 f.write(version)
         else:
