@@ -1,7 +1,7 @@
 import schedule
 
 # frpc二进制文件名
-FRPC_BIN = "frpc"
+#FRPC_BIN = "frpc"
 # frpc所在目录
 FRPC_DIR = "frpc"
 # 更新定时器，设置请参考schedule包

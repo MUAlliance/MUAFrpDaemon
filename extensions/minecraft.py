@@ -9,11 +9,11 @@ from daemon import *
 from config import FRPC_DIR
 
 RELOAD_CONFIG_COMMAND = "prox reload"
-VELOCITY_DIR = "velocity"
+MINECRAFT_PROXY_DIR = "server"
 TRUSTED_ENTRIES_FILE = "plugins/proxied-proxy/TrustedEntries.json"
 START_COMMAND = "bash start.sh"
 
-class VelocityCommand(Command):
+class MinecraftProxyCommand(Command):
     def __init__(self):
         pass
 
@@ -23,7 +23,7 @@ class VelocityCommand(Command):
     def exec(self, s : list[str], raw : str) -> None:
         SERVER.sendCommand(raw)
 
-class Velocity:
+class MinecraftProxy:
     def __init__(self):
         self.__terminate_cmd = "stop"
         self.__frpc_log_dir = os.path.join(FRPC_DIR, "logs")
@@ -32,7 +32,7 @@ class Velocity:
         DAEMON.eventMgr.registerHandler(DaemonStartEvent, self.onDaemonInit)
         DAEMON.eventMgr.registerHandler(FrpcSyncEvent, self.onSync)
         DAEMON.eventMgr.registerHandler(DaemonStopEvent, self.onStop)
-        DAEMON.commandParser.register(VelocityCommand(), Command.Priority.LOW)
+        DAEMON.commandParser.register(MinecraftProxyCommand(), Command.Priority.LOW)
 
     def onDaemonInit(self, event : DaemonStartEvent) -> None:
         if not os.path.exists(self.__frpc_log_dir):
@@ -42,7 +42,7 @@ class Velocity:
         self.__start()
 
     def onSync(self, event : FrpcSyncEvent) -> None:
-        with open(os.path.join(VELOCITY_DIR, TRUSTED_ENTRIES_FILE), 'w') as f:
+        with open(os.path.join(MINECRAFT_PROXY_DIR, TRUSTED_ENTRIES_FILE), 'w') as f:
             f.write(json.dumps(event.api_query_result["entry_list"]))
         self.sendCommand(RELOAD_CONFIG_COMMAND)
 
@@ -76,7 +76,7 @@ class Velocity:
         self.__start()
 
     def __start(self) -> None:
-        self.__subprocess : subprocess.Popen = subprocess.Popen(START_COMMAND, cwd=VELOCITY_DIR, stdin=subprocess.PIPE, stdout=sys.stdout, stderr=sys.stderr, shell=True)
+        self.__subprocess : subprocess.Popen = subprocess.Popen(START_COMMAND, cwd=MINECRAFT_PROXY_DIR, stdin=subprocess.PIPE, stdout=sys.stdout, stderr=sys.stderr, shell=True)
 
     def redirectFrpcLog(self) -> None:
         if self.__frpc_log_file is not None:
@@ -85,4 +85,4 @@ class Velocity:
         DAEMON.frpc.setStdout(self.__frpc_log_file)
         DAEMON.frpc.setStderr(self.__frpc_log_file)
 
-SERVER = Velocity()
+SERVER = MinecraftProxy()

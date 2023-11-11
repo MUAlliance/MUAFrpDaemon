@@ -3,18 +3,19 @@ import os
 import subprocess
 import threading
 import schedule
-import requests
-import json
 import traceback
 import hashlib
+import platform
 
 from config import *
 from utils.command import *
 from utils.event import *
+from utils.union_api import UnionAPI
 
 DAEMON = None
 INFO = None
 WARN = None
+
 
 class FrpcDaemon:
     def __init__(self):
@@ -24,7 +25,15 @@ class FrpcDaemon:
         self.__job = None
         self.__stdout = sys.stdout
         self.__stderr = sys.stderr
-        self.__frpc_bin = os.path.join(FRPC_DIR, FRPC_BIN)
+        frpc_bin = "frpc"
+        if platform.system() == "Windows":
+            frpc_bin = "frpc.exe"
+        self.__frpc_bin = os.path.join(FRPC_DIR, frpc_bin)
+        self.__union_api = UnionAPI(FRPC_UNION_API_NETWORK)
+
+    @property
+    def union_api(self) -> UnionAPI:
+        return self.__union_api
 
     def __restartFrpcProcesses(self, configs : list) -> None:
         self.__lock.acquire()
@@ -69,8 +78,8 @@ class FrpcDaemon:
         DAEMON.eventMgr.fire(FrpcStartEvent(self))
 
     def sync(self) -> None:
-        response = self.queryAPI()
-        event = FrpcSyncEvent(response)
+        response = self.unionAPI.queryAPI()
+        event = FrpcSyncEvent(self, response)
         DAEMON.eventMgr.fire(event)
         self.__restartFrpcProcesses(event.api_query_result['frpc'])
 
@@ -85,10 +94,6 @@ class FrpcDaemon:
             server.terminate()
             server.wait()
             os.remove(os.path.join(FRPC_DIR, f"{server_hash}.ini"))
-
-    def queryAPI(self) -> list[dict]:
-        response = requests.get(FRPC_UNION_API_NETWORK, headers={"X-Union-Network-Query-Token" : FRPC_UNION_MEMBER_KEY})
-        return json.loads(response.text)
     
     def setStdout(self, stdout) -> None:
         self.__stdout = stdout
@@ -121,7 +126,7 @@ class Daemon:
     def daemon(self) -> None:
         try:
             self.info("Starting daemon...")
-            self.eventMgr.fire(DaemonStartEvent())
+            self.eventMgr.fire(DaemonStartEvent(self.__frpc))
             self.__frpc.startScheduledTask(FRPC_SYNC_SCHEDULE)
             self.__frpc.start()
             self.commandParser.register(stopCommand())
@@ -159,7 +164,7 @@ class Daemon:
         try:
             self.info("Shutting down...")
             self.frpc.stop()
-            self.__event_mgr.fire(DaemonStopEvent())
+            self.__event_mgr.fire(DaemonStopEvent(self.__frpc))
         except :
             traceback.print_exc()
         finally:

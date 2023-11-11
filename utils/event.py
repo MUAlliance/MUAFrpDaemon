@@ -1,3 +1,5 @@
+from utils.main import FrpcDaemon
+
 class Event:
     class Priority:
         HIGH = 0
@@ -8,20 +10,21 @@ class Event:
         pass
 
 class FrpcSyncEvent(Event):
-    def __init__(self, api_query_result):
+    def __init__(self, frpc_daemon : FrpcDaemon, api_query_result):
+        self.frpc_daemon = frpc_daemon
         self.api_query_result = api_query_result
 
 class FrpcStartEvent(Event):
-    def __init__(self, frpc_daemon):
+    def __init__(self, frpc_daemon : FrpcDaemon):
         self.frpc_daemon = frpc_daemon
 
 class DaemonStartEvent(Event):
-    def __init__(self):
-        pass
+    def __init__(self, frpc_daemon : FrpcDaemon):
+        self.frpc_daemon = frpc_daemon
 
 class DaemonStopEvent(Event):
-    def __init__(self):
-        pass
+    def __init__(self, frpc_daemon : FrpcDaemon):
+        self.frpc_daemon = frpc_daemon
 
 class FrpcPauseEvent(Event):
     def __init__(self):
