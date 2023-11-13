@@ -57,7 +57,7 @@ class FrpcDaemon:
                 for placeholder, repl in FRPC_CONFIG_PLACEHOLDERS.items():
                     config = config.replace(f"#{placeholder}#", repl)
                 config.replace(r'\r\n', r'\n')
-                f.write(config)
+                f.write(config.encode('utf-8'))
             self.__frpc_threads[new_hash] = self.__startFrpc(config_fname)
             self.__frpc_servers[new_hash] = new
         for rm_hash in delete_servers:
