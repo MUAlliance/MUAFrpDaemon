@@ -6,8 +6,6 @@ from typing import Union, Optional, Tuple
 
 from daemon import *
 
-GITHUB_MIRROR = "https://github.com"
-
 class Resource:
     def download(self, output_path : str, output_filename : Union[str, None] = None) -> str:
         pass
@@ -42,8 +40,8 @@ class DownloadableResource(Resource):
             data_count = 0
             if not os.path.exists(output_path):
                 os.makedirs(output_path)
-            fpath = os.path.join(output_path, output_filename)
             output_filename = self.filename if output_filename is None else output_filename
+            fpath = os.path.join(output_path, output_filename)
             with open(fpath, "wb") as file:
                 for data in response.iter_content(chunk_size=chunk_size):
                     file.write(data)
@@ -56,7 +54,7 @@ class DownloadableResource(Resource):
 
 class GitHubDownloader:
     def __init__(self, repo : str):
-        url = f"https://api.github.com/repos/{repo}/releases"
+        url = f"https://github-api-bypass.sjmc.club/repos/{repo}/releases"
         response = requests.get(url)
         if response.status_code == 200:
             self.release_info = response.json()
