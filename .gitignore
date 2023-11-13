@@ -1,4 +1,7 @@
 .git
+.venv
 __pycache__
 */__pycache__
 frpc/*
+server
+extensions/conf/*

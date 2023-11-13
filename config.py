@@ -14,16 +14,17 @@ FRPC_UNION_MEMBER_KEY = ""
 # 目前只需替换metas和servers
 FRPC_CONFIG_PLACEHOLDERS = {
     "metas" : '''
-meta_domain = 
-meta_domain_alias = 
-meta_forced_hosts = 
+metadatas.domain = 
+metadatas.domain_alias = 
+metadatas.forced_hosts = 
     ''',
     "servers" : '''
-[SJMC]
-type = tcp
-local_ip = 127.0.0.1
-local_port = 
-remote_port = 
+[[proxies]]
+name = "SJMC"
+type = "tcp"
+localIp = "127.0.0.1"
+localPort = 00000
+remotePort = 00000
     '''
 }
 

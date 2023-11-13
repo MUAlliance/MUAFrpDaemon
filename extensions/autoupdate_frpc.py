@@ -53,7 +53,7 @@ class FrpcAutoUpdater:
             else:
                 WARN("Unsupported architecture.")
                 return
-            self.downloadFrpc(version, os_name, arch, os.path.join(config.FRPC_DIR,"frpc_download"))
+            self.downloadFrpc(version, os_name, arch, os.path.join(config.FRPC_DIR,"download"))
         except Exception as e:
             WARN("Error occured:")
             traceback.print_exc(e)
@@ -82,5 +82,6 @@ class FrpcAutoUpdater:
                 f.write(version)
         else:
             WARN("Unknown format")
+        os.remove(fpath)
 
 FrpcAutoUpdater()

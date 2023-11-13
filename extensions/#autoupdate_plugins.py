@@ -9,11 +9,14 @@ from extensions.download_github_release import GitHubDownloader
 from extensions.minecraft import MINECRAFT_PROXY_DIR
 
 SPIGET_PLUGINS = [
-    (19254, "viaversion.jar")
+    (19254, "ViaVersion.jar"),
+    (27448, "ViaBackwards.jar"),
+    (52109, "ViaRewind.jar")
 ]
 
 GITHUB_PLUGINS = [
-    ("CakeDreamer/ProxiedProxy", "ProxiedProxy.jar")
+    ("CakeDreamer/ProxiedProxy", "ProxiedProxy.jar"),
+    ("MUAlliance/UnionProxyExtension", "UnionProxyExtension.jar")
 ]
 
 STORAGE_FILE = "autoupdate_plugins.txt"
@@ -72,9 +75,9 @@ class GithubPluginAutoUpdater:
 
     def onDaemonInit(self, event : DaemonStartEvent) -> None:
         INFO("Checking for Github plugins updates...")
-        if not os.path.exists(os.path.join("extensions", STORAGE_FILE)):
-            open(os.path.join("extensions", STORAGE_FILE), 'w').close()
-        with open(os.path.join("extensions", STORAGE_FILE), 'r') as f:
+        if not os.path.exists(os.path.join("extensions", "conf", STORAGE_FILE)):
+            open(os.path.join("extensions", "conf", STORAGE_FILE), 'w').close()
+        with open(os.path.join("extensions", "conf", STORAGE_FILE), 'r') as f:
             try:
                 self.downloaded_ids = json.load(f)
             except:
@@ -87,8 +90,11 @@ class GithubPluginAutoUpdater:
                 repo, output, keyword = item
             else:
                 continue
-            self.download(repo, keyword, os.path.join(MINECRAFT_PROXY_DIR, "plugins", output))
-        with open(os.path.join("extensions", STORAGE_FILE), 'w') as f:
+            try:
+                self.download(repo, keyword, os.path.join(MINECRAFT_PROXY_DIR, "plugins", output))
+            except:
+                WARN("Download failed.")
+        with open(os.path.join("extensions", "conf", STORAGE_FILE), 'w') as f:
             json.dump(self.downloaded_ids_new, f)
 
     def download(self, repo : str, keyword : Union[str, re.Pattern, None], output : str) -> None:
@@ -96,7 +102,9 @@ class GithubPluginAutoUpdater:
         if resource.getId() != 0:
             if self.downloaded_ids.get(output, 0) != resource.getId():
                 resource.download(os.path.dirname(output), os.path.basename(output))
-                INFO(f"Download completed. File saved to: {output}")
+                INFO(f"{repo} downloaded as: {output}")
+            else:
+                INFO(f"{repo} is the latest.")
             self.downloaded_ids_new[output] = resource.getId()
 
 SpigetPluginAutoUpdater(SPIGET_PLUGINS)

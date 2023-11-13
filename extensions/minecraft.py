@@ -42,6 +42,10 @@ class MinecraftProxy:
         self.__start()
 
     def onSync(self, event : FrpcSyncEvent) -> None:
+        fpath = os.path.join(MINECRAFT_PROXY_DIR, TRUSTED_ENTRIES_FILE)
+        fdir = os.path.dirname(fpath)
+        if not os.path.exists(fdir):
+            os.makedirs(fdir)
         with open(os.path.join(MINECRAFT_PROXY_DIR, TRUSTED_ENTRIES_FILE), 'w') as f:
             f.write(json.dumps(event.api_query_result["entry_list"]))
         self.sendCommand(RELOAD_CONFIG_COMMAND)

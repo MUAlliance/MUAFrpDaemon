@@ -51,7 +51,7 @@ class FrpcDaemon:
             if item_hash not in keep_servers:
                 delete_servers.append(item_hash)
         for new_hash, new in new_servers.items():
-            config_fname = os.path.join(FRPC_DIR, f'{new_hash}.ini')
+            config_fname = os.path.join(FRPC_DIR, f'{new_hash}.toml')
             with open(config_fname, "w") as f:
                 config = new['config']
                 for placeholder, repl in FRPC_CONFIG_PLACEHOLDERS.items():
@@ -65,7 +65,7 @@ class FrpcDaemon:
             DEBUG(f"{self.__frpc_threads[rm_hash].pid} {self.__frpc_threads[rm_hash].poll()}")
             del self.__frpc_threads[rm_hash]
             del self.__frpc_servers[rm_hash]
-            os.remove(os.path.join(FRPC_DIR, f"{rm_hash}.ini"))
+            os.remove(os.path.join(FRPC_DIR, f"{rm_hash}.toml"))
         self.__lock.release()
 
     def __startFrpc(self, config_fname : str) -> subprocess.Popen:
@@ -93,7 +93,7 @@ class FrpcDaemon:
         for server_hash, server in self.__frpc_threads.items():
             server.terminate()
             server.wait()
-            os.remove(os.path.join(FRPC_DIR, f"{server_hash}.ini"))
+            os.remove(os.path.join(FRPC_DIR, f"{server_hash}.toml"))
     
     def setStdout(self, stdout) -> None:
         self.__stdout = stdout

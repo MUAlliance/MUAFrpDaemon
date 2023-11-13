@@ -23,8 +23,30 @@
 
 考虑到没有需求，因此没有扩展文档。
 
-### Velocity扩展
-如果你使用二级代理接入MUA服务器网络，可以考虑启用velocity扩展。
-- 拷贝Velocity的文件到`velocity`文件夹
+### Velocity/Bungeecord
+如果你使用二级代理接入MUA服务器网络，可以考虑启用minecraft扩展。
+- 拷贝Velocity的文件到`server`文件夹
 - 去掉文件名开头的`#`
-- 修改`velocity.py`，修改`START_COMMAND`为你的启动指令
+- 修改`minecraft.py`，修改`START_COMMAND`为你的启动指令
+
+#### 自动更新
+##### FRPC本体
+启用`autoupdate_frpc.py`和`download_github_release.py`。
+**需要能访问GitHub**
+
+##### Velocity/Bungeecord
+启用`autoupdate_velocity.py`或`autoupdate_bungeecord.py`，修改其中的jar文件名。
+
+##### 插件
+启用`autoupdate_plugins.py`。对于spigotmc上的插件，你需要知道resource id。
+- 如ViaVersion的链接为`https://www.spigotmc.org/resources/viaversion.19254/`，其resource id为19254。
+- 添加到`SPIGET_PLUGINS`，形如`(<resource id>, <jar名称>)`
+
+对于GitHub上的插件，你需要提供repo的路径。**需要能访问GitHub**。
+- 添加到`GITHUB_PLUGINS`，形如`(<repo>, <jar名称>, [可选，release file的正则表达式])`
+
+## 从旧版升级
+旧版扩展中`velocity.py`被更名成`minecraft.py`，并修改了默认值。修改了一部分`config.py`中的值。
+建议操作步骤：
+- 备份旧文件。至少备份`velocity.py`、`config.py`和你的Minecraft目录。
+- 下载源码，复制Minecraft目录，根据以前的`velocity.py`和`config.py`修改新版的`minecraft.py`和`config.py`。
