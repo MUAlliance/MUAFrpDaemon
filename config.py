@@ -14,9 +14,9 @@ FRPC_UNION_MEMBER_KEY = ""
 # 目前只需替换metas和servers
 FRPC_CONFIG_PLACEHOLDERS = {
     "metas" : '''
-metadatas.domain = 
-metadatas.domain_alias = 
-metadatas.forced_hosts = 
+metadatas.domain = "domain"
+metadatas.domain_alias = "[\\"alias1\\", \\"alias2\\"]"
+metadatas.forced_hosts = "[\\"forced_host\\"]"
     ''',
     "servers" : '''
 [[proxies]]

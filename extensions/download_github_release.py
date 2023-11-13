@@ -42,8 +42,9 @@ class DownloadableResource(Resource):
             data_count = 0
             if not os.path.exists(output_path):
                 os.makedirs(output_path)
+            fpath = os.path.join(output_path, output_filename)
             output_filename = self.filename if output_filename is None else output_filename
-            with open(os.path.join(output_path, output_filename), "wb") as file:
+            with open(fpath, "wb") as file:
                 for data in response.iter_content(chunk_size=chunk_size):
                     file.write(data)
                     data_count = data_count + len(data)
@@ -51,7 +52,7 @@ class DownloadableResource(Resource):
                     print("\r Downloading: %d%%(%d/%d) - %s"
                         % (progress, data_count, content_size, self.url), end=" ")
                 print()
-        return os.path.join(output_path, output_filename)
+        return fpath
 
 class GitHubDownloader:
     def __init__(self, repo : str):
