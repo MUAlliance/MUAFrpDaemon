@@ -52,10 +52,11 @@ class FrpcDaemon:
                 delete_servers.append(item_hash)
         for new_hash, new in new_servers.items():
             config_fname = os.path.join(FRPC_DIR, f'{new_hash}.toml')
-            with open(config_fname, "w") as f:
+            with open(config_fname, "wb") as f:
                 config = new['config']
                 for placeholder, repl in FRPC_CONFIG_PLACEHOLDERS.items():
                     config = config.replace(f"#{placeholder}#", repl)
+                config.replace(r'\r\n', r'\n')
                 f.write(config)
             self.__frpc_threads[new_hash] = self.__startFrpc(config_fname)
             self.__frpc_servers[new_hash] = new
