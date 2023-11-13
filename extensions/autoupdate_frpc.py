@@ -65,7 +65,8 @@ class FrpcAutoUpdater:
         if fpath.endswith('.tar.gz'):
             with tarfile.open(fpath, 'r:gz') as tf:
                 subfolder = [m for m in tf.getmembers() if m.isdir()][0].name
-                os.removedirs(config.FRPC_DIR)
+                if os.path.exists(config.FRPC_DIR):
+                    shutil.rmtree(config.FRPC_DIR)
                 os.makedirs(config.FRPC_DIR)
                 tf.extractall(config.FRPC_DIR)
                 for f in os.listdir(os.path.join(config.FRPC_DIR, subfolder)):
@@ -76,7 +77,8 @@ class FrpcAutoUpdater:
         elif fpath.endswith('.zip'):
             with zipfile.ZipFile(fpath, 'r') as zf:
                 subfolder = [n for n in zf.namelist() if n.endswith('/')][0]
-                os.removedirs(config.FRPC_DIR)
+                if os.path.exists(config.FRPC_DIR):
+                    shutil.rmtree(config.FRPC_DIR)
                 os.makedirs(config.FRPC_DIR)
                 zf.extractall(config.FRPC_DIR)
                 for f in os.listdir(os.path.join(config.FRPC_DIR, subfolder)):
