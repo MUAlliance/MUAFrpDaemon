@@ -75,6 +75,8 @@ class GithubPluginAutoUpdater:
 
     def onDaemonInit(self, event : DaemonStartEvent) -> None:
         INFO("Checking for Github plugins updates...")
+        if not os.path.exists(os.path.join("extensions", "conf")):
+            os.makedirs(os.path.join("extensions", "conf"))
         if not os.path.exists(os.path.join("extensions", "conf", STORAGE_FILE)):
             open(os.path.join("extensions", "conf", STORAGE_FILE), 'w').close()
         with open(os.path.join("extensions", "conf", STORAGE_FILE), 'r') as f:

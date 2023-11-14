@@ -10,6 +10,7 @@ from config import FRPC_DIR
 
 RELOAD_CONFIG_COMMAND = "prox reload"
 MINECRAFT_PROXY_DIR = "server"
+# Change this to "plugins/ProxiedProxy/TrustedEntries.json" for Bungeecord
 TRUSTED_ENTRIES_FILE = "plugins/proxied-proxy/TrustedEntries.json"
 START_COMMAND = "bash start.sh"
 
