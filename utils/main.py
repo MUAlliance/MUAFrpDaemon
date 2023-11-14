@@ -6,6 +6,7 @@ import schedule
 import traceback
 import hashlib
 import platform
+import time
 
 from config import *
 from utils.command import *
@@ -23,6 +24,7 @@ class FrpcDaemon:
         self.__frpc_threads : dict[str : subprocess.Popen] = {}
         self.__lock = threading.Lock()
         self.__job = None
+        self.__job_thread = None
         self.__stdout = sys.stdout
         self.__stderr = sys.stderr
         frpc_bin = "frpc"
@@ -84,13 +86,23 @@ class FrpcDaemon:
         DAEMON.eventMgr.fire(event)
         self.__restartFrpcProcesses(event.api_query_result['frpc'])
 
+    def __scheduleRunner(self):
+        while self.__job is not None:
+            schedule.run_pending()
+            time.sleep(1)
+
     def startScheduledTask(self, scd : schedule.Job) -> None:
         if self.__job is None:
             self.__job = scd.do(self.sync)
+        if self.__job_thread is None:
+            self.__job_thread = threading.Thread(target=self.__scheduleRunner)
+            self.__job_thread.start()
 
     def stop(self) -> None:
         schedule.cancel_job(self.__job)
         self.__job = None
+        self.__job_thread.join()
+        self.__job_thread = None
         for server_hash, server in self.__frpc_threads.items():
             server.terminate()
             server.wait()
