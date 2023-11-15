@@ -12,14 +12,17 @@ class BungeeCordAutoUpdater:
         DAEMON.eventMgr.registerHandler(DaemonStartEvent, self.onDaemonInit, Event.Priority.HIGH)
 
     def onDaemonInit(self, event : DaemonStartEvent) -> None:
-        if not os.path.exists(os.path.join(MINECRAFT_PROXY_DIR, JAR_NAME)):
-            WARN(f"Skipping BungeeCord autoupdate because {JAR_NAME} does not exist in MINECRAFT_PROXY_DIR.")
-            return
+        #if not os.path.exists(os.path.join(MINECRAFT_PROXY_DIR, JAR_NAME)):
+        #    WARN(f"Skipping BungeeCord autoupdate because {JAR_NAME} does not exist in MINECRAFT_PROXY_DIR.")
+        #    return
         INFO("Checking for BungeeCord updates...")
         BASE_URL = "https://ci.md-5.net/job/BungeeCord/lastStableBuild/artifact/bootstrap/target/BungeeCord.jar"
         try:
             remote_md5 = re.search(r'<a href="/" class>(.*?)</a>', requests.get(f"{BASE_URL}/*fingerprint*/").text).group(1)
-            local_md5 = hashlib.md5(open(os.path.join(MINECRAFT_PROXY_DIR, JAR_NAME), "rb").read()).hexdigest()
+            if os.path.exists(os.path.join(MINECRAFT_PROXY_DIR, JAR_NAME)):
+                local_md5 = hashlib.md5(open(os.path.join(MINECRAFT_PROXY_DIR, JAR_NAME), "rb").read()).hexdigest()
+            else:
+                local_md5 = None
             if remote_md5 == local_md5:
                 INFO("BungeeCord is up to date.")
                 return

@@ -11,16 +11,19 @@ class VelocityAutoUpdater:
         DAEMON.eventMgr.registerHandler(DaemonStartEvent, self.onDaemonInit, Event.Priority.HIGH)
 
     def onDaemonInit(self, event : DaemonStartEvent) -> None:
-        if not os.path.exists(os.path.join(MINECRAFT_PROXY_DIR, JAR_NAME)):
-            WARN(f"Skipping Velocity autoupdate because {JAR_NAME} does not exist in MINECRAFT_PROXY_DIR.")
-            return
+        #if not os.path.exists(os.path.join(MINECRAFT_PROXY_DIR, JAR_NAME)):
+        #    WARN(f"Skipping Velocity autoupdate because {JAR_NAME} does not exist in MINECRAFT_PROXY_DIR.")
+        #    return
         INFO("Checking for Velocity updates...")
         BASE_URL = "https://api.papermc.io/v2/projects/velocity"
         try:
             version = requests.get(BASE_URL).json()["versions"][-1]
             build = requests.get(f"{BASE_URL}/versions/{version}/builds").json()["builds"][-1]
             remote_sha256 = build["downloads"]["application"]["sha256"]
-            local_sha256 = hashlib.sha256(open(os.path.join(MINECRAFT_PROXY_DIR, JAR_NAME), "rb").read()).hexdigest()
+            if os.path.exists(os.path.join(MINECRAFT_PROXY_DIR, JAR_NAME)):
+                local_sha256 = hashlib.sha256(open(os.path.join(MINECRAFT_PROXY_DIR, JAR_NAME), "rb").read()).hexdigest()
+            else:
+                local_sha256 = None
             if remote_sha256 == local_sha256:
                 INFO("Velocity is up to date.")
                 return
