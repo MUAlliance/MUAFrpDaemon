@@ -6,30 +6,39 @@ from typing import Union
 
 from daemon import *
 from extensions.download_github_release import GitHubDownloader
-from extensions.minecraft import MINECRAFT_PROXY_DIR
-
-SPIGET_PLUGINS = [
-    (19254, "ViaVersion.jar"),
-    (27448, "ViaBackwards.jar"),
-    (52109, "ViaRewind.jar")
-]
-
-GITHUB_PLUGINS = [
-    ("CakeDreamer/ProxiedProxy", "ProxiedProxy.jar"),
-    ("MUAlliance/UnionProxyExtension", "UnionProxyExtension.jar")
-]
+from extensions.minecraft import SERVER
+from utils import extension_config
 
 STORAGE_FILE = "autoupdate_plugins.txt"
 
-class SpigetPluginAutoUpdater:
-    def __init__(self, plugins : list[str]):
+class PluginAutoUpdater:
+    def __init__(self) -> None:
         DAEMON.eventMgr.registerHandler(DaemonStartEvent, self.onDaemonInit, Event.Priority.HIGH)
-        self.plugins = plugins
+        self.__config = extension_config.load_config("autoupdate_plugins.yml", {
+            "spiget" : [
+                {"id" : 19254, "file" : "ViaVersion.jar"},
+                {"id" : 27448, "file" : "ViaBackwards.jar"},
+                {"id" : 52109, "file" : "ViaRewind.jar"}
+            ],
+            "github" : [
+                {"repo" : "CakeDreamer/ProxiedProxy", "file" : "ProxiedProxy.jar"},
+                {"repo" : "MUAlliance/UnionProxyExtension", "file" : "UnionProxyExtension.jar"}
+            ]
+        })
 
     def onDaemonInit(self, event : DaemonStartEvent) -> None:
+        SpigetPluginAutoUpdater(self.__config["spiget"])
+        GithubPluginAutoUpdater(self.__config["github"])
+
+
+class SpigetPluginAutoUpdater:
+    def __init__(self, plugins):
+        #DAEMON.eventMgr.registerHandler(DaemonStartEvent, self.onDaemonInit, Event.Priority.HIGH)
+        self.plugins = plugins
+
         INFO("Checking for Spiget plugins updates...")
-        for resource_id, jar_file in SPIGET_PLUGINS:
-            self.download(resource_id, os.path.join(MINECRAFT_PROXY_DIR, "plugins", jar_file))
+        for i in self.plugins:
+            self.download(i["id"], os.path.join(SERVER.getDir(), "plugins", i["file"]))
 
     def download(self, resource_id : str, save_path : str) -> None:
         BASE_URL = 'https://api.spiget.org/v2/resources'
@@ -67,36 +76,29 @@ class SpigetPluginAutoUpdater:
             WARN(f'An error occurred while downloading the plugin: {str(e)}')
         
 class GithubPluginAutoUpdater:
-    def __init__(self, plugins : list[str]):
-        DAEMON.eventMgr.registerHandler(DaemonStartEvent, self.onDaemonInit, Event.Priority.HIGH)
+    def __init__(self, plugins):
+        #DAEMON.eventMgr.registerHandler(DaemonStartEvent, self.onDaemonInit, Event.Priority.HIGH)
         self.plugins = plugins
         self.downloaded_ids = {}
         self.downloaded_ids_new = {}
-
-    def onDaemonInit(self, event : DaemonStartEvent) -> None:
+        
         INFO("Checking for Github plugins updates...")
-        if not os.path.exists(os.path.join("extensions", "conf")):
-            os.makedirs(os.path.join("extensions", "conf"))
-        if not os.path.exists(os.path.join("extensions", "conf", STORAGE_FILE)):
-            open(os.path.join("extensions", "conf", STORAGE_FILE), 'w').close()
-        with open(os.path.join("extensions", "conf", STORAGE_FILE), 'r') as f:
+        if not os.path.exists(os.path.join("conf", STORAGE_FILE)):
+            open(os.path.join("conf", STORAGE_FILE), 'w').close()
+        with open(os.path.join("conf", STORAGE_FILE), 'r') as f:
             try:
                 self.downloaded_ids = json.load(f)
             except:
                 self.downloaded_ids = {}
-        for item in GITHUB_PLUGINS:
-            if len(item) == 2:
-                repo, output = item
-                keyword = ".jar$"
-            elif len(item) == 3:
-                repo, output, keyword = item
-            else:
-                continue
+        for item in self.plugins:
+            repo = item["repo"]
+            output = item["file"]
+            keyword = item.get("keyword", ".jar$")
             try:
-                self.download(repo, keyword, os.path.join(MINECRAFT_PROXY_DIR, "plugins", output))
+                self.download(repo, keyword, os.path.join(SERVER.getDir(), "plugins", output))
             except:
                 WARN("Download failed.")
-        with open(os.path.join("extensions", "conf", STORAGE_FILE), 'w') as f:
+        with open(os.path.join("conf", STORAGE_FILE), 'w') as f:
             json.dump(self.downloaded_ids_new, f)
 
     def download(self, repo : str, keyword : Union[str, re.Pattern, None], output : str) -> None:
@@ -109,5 +111,3 @@ class GithubPluginAutoUpdater:
                 INFO(f"{repo} is the latest.")
             self.downloaded_ids_new[output] = resource.getId()
 
-SpigetPluginAutoUpdater(SPIGET_PLUGINS)
-GithubPluginAutoUpdater(GITHUB_PLUGINS)

@@ -4,15 +4,10 @@ import sys
 import json
 import datetime
 import schedule
+from utils import extension_config
 
 from daemon import *
 from config import FRPC_DIR
-
-RELOAD_CONFIG_COMMAND = "prox reload"
-MINECRAFT_PROXY_DIR = "server"
-# Change this to "plugins/ProxiedProxy/TrustedEntries.json" for Bungeecord
-TRUSTED_ENTRIES_FILE = "plugins/proxied-proxy/TrustedEntries.json"
-START_COMMAND = "bash start.sh"
 
 class MinecraftProxyCommand(Command):
     def __init__(self):
@@ -30,10 +25,19 @@ class MinecraftProxy:
         self.__frpc_log_dir = os.path.join(FRPC_DIR, "logs")
         self.__frpc_log_file = None
         self.__subprocess = None
+        self.__config = extension_config.load_config("minecraft.yml", {
+            "reload_config_command" : "prox reload",
+            "minecraft_proxy_dir" : "server",
+            "trusted_entries_file" : "plugins/proxied-proxy/TrustedEntries.json",
+            "start_command" : "bash start.sh"
+        })
         DAEMON.eventMgr.registerHandler(DaemonStartEvent, self.onDaemonInit)
         DAEMON.eventMgr.registerHandler(FrpcSyncEvent, self.onSync)
         DAEMON.eventMgr.registerHandler(DaemonStopEvent, self.onStop)
         DAEMON.commandParser.register(MinecraftProxyCommand(), Command.Priority.LOW)
+
+    def getDir(self):
+        return self.__config["minecraft_proxy_dir"]
 
     def onDaemonInit(self, event : DaemonStartEvent) -> None:
         if not os.path.exists(self.__frpc_log_dir):
@@ -43,13 +47,13 @@ class MinecraftProxy:
         self.__start()
 
     def onSync(self, event : FrpcSyncEvent) -> None:
-        fpath = os.path.join(MINECRAFT_PROXY_DIR, TRUSTED_ENTRIES_FILE)
+        fpath = os.path.join(self.__config["minecraft_proxy_dir"], self.__config["trusted_entries_file"])
         fdir = os.path.dirname(fpath)
         if not os.path.exists(fdir):
             os.makedirs(fdir)
-        with open(os.path.join(MINECRAFT_PROXY_DIR, TRUSTED_ENTRIES_FILE), 'w') as f:
+        with open(os.path.join(self.__config["minecraft_proxy_dir"], self.__config["trusted_entries_file"]), 'w') as f:
             f.write(json.dumps(event.api_query_result["entry_list"]))
-        self.sendCommand(RELOAD_CONFIG_COMMAND)
+        self.sendCommand(self.__config["reload_config_command"])
 
     def onStop(self, event : DaemonStopEvent) -> None:
         self.terminate()
@@ -61,6 +65,8 @@ class MinecraftProxy:
         return self.__subprocess.poll()
     
     def sendCommand(self, cmd : str) -> None:
+        if not cmd.endswith(os.linesep):
+            cmd += os.linesep
         self.__subprocess.stdin.write(cmd.encode())
         self.__subprocess.stdin.flush()
     
@@ -81,7 +87,7 @@ class MinecraftProxy:
         self.__start()
 
     def __start(self) -> None:
-        self.__subprocess : subprocess.Popen = subprocess.Popen(START_COMMAND, cwd=MINECRAFT_PROXY_DIR, stdin=subprocess.PIPE, stdout=sys.stdout, stderr=sys.stderr, shell=True)
+        self.__subprocess : subprocess.Popen = subprocess.Popen(self.__config["start_command"], cwd=self.__config["minecraft_proxy_dir"], stdin=subprocess.PIPE, stdout=sys.stdout, stderr=sys.stderr, shell=True)
 
     def redirectFrpcLog(self) -> None:
         if self.__frpc_log_file is not None:

@@ -2,26 +2,29 @@ import os
 import requests
 
 from daemon import *
-from extensions.minecraft import MINECRAFT_PROXY_DIR
+from extensions.minecraft import SERVER
 from extensions.download_github_release import GitHubDownloader
-
-JAR_NAME = "authlib-injector.jar"
+from utils import extension_config
 
 class AuthlibAutoUpdater:
     def __init__(self):
         DAEMON.eventMgr.registerHandler(DaemonStartEvent, self.onDaemonInit, Event.Priority.HIGH)
+        self.__config = extension_config.load_config("autoupdate_authlib_injector.yml", 
+            {
+                "file" : "authlib-injector.jar"
+            })  
 
     def onDaemonInit(self, event : DaemonStartEvent) -> None:
-        #if not os.path.exists(os.path.join(MINECRAFT_PROXY_DIR, JAR_NAME)):
-        #    WARN(f"Skipping authlib-injector autoupdate because {JAR_NAME} does not exist in MINECRAFT_PROXY_DIR.")
+        #if not os.path.exists(os.path.join(SERVER.getDir(), file)):
+        #    WARN(f"Skipping authlib-injector autoupdate because {file} does not exist in SERVER.getDir().")
         #    return
         INFO("Checking for authlib-injector updates...")
         BASE_URL = "https://authlib-injector.yushi.moe/artifact/latest.json"
         try:
             build = requests.get(BASE_URL).json()
             remote_sha256 = build["checksums"]["sha256"]
-            if os.path.exists(os.path.join(MINECRAFT_PROXY_DIR, JAR_NAME)):
-                local_sha256 = hashlib.sha256(open(os.path.join(MINECRAFT_PROXY_DIR, JAR_NAME), "rb").read()).hexdigest()
+            if os.path.exists(os.path.join(SERVER.getDir(), self.__config["file"])):
+                local_sha256 = hashlib.sha256(open(os.path.join(SERVER.getDir(), self.__config["file"]), "rb").read()).hexdigest()
             else:
                 local_sha256 = None
             if remote_sha256 == local_sha256:
@@ -33,7 +36,7 @@ class AuthlibAutoUpdater:
             if response.status_code != 200:
                 WARN(f"Failed to download authlib-injector. Status code: {response.status_code}")
                 return
-            with open(os.path.join(MINECRAFT_PROXY_DIR, JAR_NAME), "wb") as f:
+            with open(os.path.join(SERVER.getDir(), self.__config["file"]), "wb") as f:
                 f.write(response.content)
             INFO("authlib-injector updated successfully.")
         except Exception as e:
